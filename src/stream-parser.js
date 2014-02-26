@@ -46,7 +46,7 @@ util.inherits(XmppStreamParser, events.EventEmitter);
 dutil.copy(XmppStreamParser.prototype, {
     _handle_start_element: function(name, attrs) {
         if (!this._started) {
-            if (name === "stream:stream") {
+            if (name === "open") {
                 this._started = true;
                 this.emit("stream-start", attrs);
             } else {
@@ -55,7 +55,7 @@ dutil.copy(XmppStreamParser.prototype, {
             }
         } else {
             var stanza = new ltx.Element(name, attrs);
-            if (name === "stream:stream") {
+            if (name === "open") {
                 this.emit("stream-restart", attrs, stanza);
             } else {
                 if (this.stanza) {
@@ -68,7 +68,7 @@ dutil.copy(XmppStreamParser.prototype, {
     },
 
     _handle_end_element: function(name, attrs) {
-        if (name === "stream:stream") {
+        if (name === "open") {
             this.emit("stream-end", attrs);
             this.end();
             return;

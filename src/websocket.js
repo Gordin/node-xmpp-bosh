@@ -44,7 +44,7 @@ var STREAM_UNOPENED = 1;
 var STREAM_OPENED   = 2;
 var STREAM_CLOSED   = 3;
 
-var XML_STREAM_CLOSE = '</stream:stream>';
+var XML_STREAM_CLOSE = '<close xmlns="urn:ietf:params:xml:ns:xmpp-framing />';
 
 //
 // Important links:
@@ -104,16 +104,11 @@ exports.createServer = function(bosh_server, options, webSocket) {
     
     wsep.on('stream-added', function(sstate) {
         var to = sstate.to || '';
-        var ss_xml = new ltx.Element('stream:stream', {
-            'xmlns': 'jabber:client',
-            'xmlns:stream': 'http://etherx.jabber.org/streams',
+        var ss_xml = new ltx.Element('open', {
+            'xmlns': "urn:ietf:params:xml:ns:xmpp-framing",
             'version': '1.0',
-            'xml:lang': 'en',
             'from': to
         }).toString();
-        if (sstate.has_open_stream_tag) {
-            ss_xml = ss_xml.replace('/>', '>');
-        }
         log.trace("%s sending data: %s", sstate.name, ss_xml);
         wsep.emit('response', ss_xml, sstate);
     });
@@ -122,10 +117,7 @@ exports.createServer = function(bosh_server, options, webSocket) {
     // https://github.com/dhruvbird/node-xmpp-bosh/issues/16
     wsep.on('stream-restarted', function(sstate, stanza) {
         var ss_xml = stanza.toString();
-        if (sstate.has_open_stream_tag) {
-            ss_xml = ss_xml.replace('/>', '>');
-        }
-        log.trace("%s sending stream:stream tag on stream restart: %s", sstate.name, ss_xml);
+        log.trace("%s sending open tag on stream restart: %s", sstate.name, ss_xml);
         wsep.emit('response', ss_xml, sstate);
     });
 
@@ -174,7 +166,6 @@ exports.createServer = function(bosh_server, options, webSocket) {
             session: {
                 sid: "WEBSOCKET"
             },
-            has_open_stream_tag: false,
             terminated: false,
             last_pong: Date.now(),
             ping_timer_id: null
@@ -214,7 +205,7 @@ exports.createServer = function(bosh_server, options, webSocket) {
             }
             
             // Check if this is a stream open message
-            if (message.indexOf('<stream:stream') !== -1) {
+            if (message.indexOf('<open') !== -1) {
                 // Yes, it is.
 
                 // Remove the leading <?xml ... ?> declaration if present.
@@ -229,7 +220,6 @@ exports.createServer = function(bosh_server, options, webSocket) {
                 if (message.indexOf('/>') === -1) {
                     // Unclosed - Close it to continue parsing
                     message += XML_STREAM_CLOSE;
-                    sstate.has_open_stream_tag = true;
                 }
             } else if (message.indexOf(XML_STREAM_CLOSE) !== -1) {
                 // Stream close message from a client must appear in a message

@@ -68,7 +68,7 @@ function XMPPProxy(xmpp_host, lookup_service, stream_start_attrs, options, void_
     this._max_xmpp_stanza_size = options.max_xmpp_stanza_size || 500000;
     this._prev_byte_index = -1;
 
-    // Suppress the <stream:stream> tag (stream-restart event) if it
+    // Suppress the <open /> tag (stream-restart event) if it
     // is a response to a STARTTLS request that we (the proxy
     // initiated).
     // 
@@ -160,7 +160,7 @@ dutil.copy(XMPPProxy.prototype, {
         var _attrs = { };
         dutil.copy(_attrs, stream_attrs);
         dutil.extend(_attrs, this._default_stream_attrs);
-        return new ltx.Element('stream:stream', _attrs).toString().replace(/\/>$/, '>');
+        return new ltx.Element('open', _attrs).toString();
     }, 
 
     _on_stanza: function(stanza) {
@@ -240,7 +240,7 @@ dutil.copy(XMPPProxy.prototype, {
             this._detach_handlers_from_parser();
 
             // Write the stream termination tag
-            this.send("</stream:stream>");
+            this.send('<close xmlns="urn:ietf:params:xml:ns:xmpp-framing />');
 
             this._is_connected = false;
 
